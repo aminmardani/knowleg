@@ -1,0 +1,34 @@
+gitlab-runner register
+
+
+sudo gitlab-runner register   \
+--non-interactive   \
+--url "https://gitlab.demisco.com/"   \
+--registration-token "2zq9ES3NVeytr8gmec2c"   \
+--executor "docker"   \
+--docker-image "docker:stable"   \
+--description "runnerdind"   \
+--tag-list "docker"   \
+--run-untagged="true"   \
+--locked="false"   \
+--access-level="not_protected" \
+--docker-volumes /var/run/docker.sock:/var/run/docker.sock  \
+--docker-volumes /etc/hosts:/etc/hosts \
+--docker-volumes /etc/gitlab-runner/certs/gitlab.demisco.com.cert:/etc/gitlab-runner/certs/gitlab.demisco.com.cert \
+--docker-privileged
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+delete gitlab-runner
+gitlab-runner verify --delete -u https://gitlab.demisco.com/ -t MRQ11EJ3FJRYRMS4yPuQ

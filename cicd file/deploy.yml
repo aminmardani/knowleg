@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $app_name
+  namespace: $name_space
+spec:
+  replicas: $replica
+  selector:
+    matchLabels:
+      app: $app_name
+  template:
+    metadata:
+      labels:
+        app: $app_name
+        logging: "true"
+    spec:
+      imagePullSecrets:
+      - name: $registry_secret
+      containers:
+      - name: $app_name
+        image: $image_name
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "1024Mi"
+            cpu: "2000m"
+        ports:
+        - containerPort: $containerPort
+---                                
+kind: Service
+apiVersion: v1
+metadata:     
+  name: $app_name
+  namespace: $name_space
+spec:                       
+  type: NodePort            
+  selector:                 
+    app: $app_name
+  ports:                         
+    - protocol: TCP              
+      port: $clusterPort                   
+      targetPort: $containerPort
+      nodePort: $nodePort

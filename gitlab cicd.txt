@@ -1,0 +1,83 @@
+image: docker:latest
+services:
+  - docker:dind
+  
+variables:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  DOCKER_TLS_CERTDIR: ""
+  GIT_SSL_NO_VERIFY: "true"
+  CONTAINER_LATEST_IMAGE1:  $CI_REGISTRY_IMAGE:latest
+  CONTAINER_JOBID_IMAGE1:  $CI_REGISTRY_IMAGE:$CI_JOB_ID
+  CONTAINER_LATEST_IMAGE: 192.168.25.80:8080/core-cloud/auth-server:latest
+  CONTAINER_JOBID_IMAGE: 192.168.25.80:8080/core-cloud/auth-server:$CI_JOB_ID
+#   CONTAINER_LATEST_IMAGE: gitlab.demisco.com:5050/ma.mardani/auth-server:latest
+#   CONTAINER_JOBID_IMAGE:  gitlab.demisco.com:5050/ma.mardani/auth-server:$CI_JOB_ID
+
+  REGISTRY_ADDRESS: $CI_REGISTRY
+
+stages:
+  - build
+  - package
+  - deploy
+
+
+cache:
+  paths:
+    - .m2/repository/
+    - target/
+    
+    
+before_script:
+  - echo "$Start CI/CD"
+  - echo "$CI_SERVER_URL"
+  - echo "$CI_PROJECT_NAME"
+  - echo "$CI_JOB_ID"
+  - echo "$CI_COMMIT_BEFORE_SHA"
+  - echo "$CI_REGISTRY_USER"
+  - echo "$CI_REGISTRY"
+  - echo "$CI_REGISTRY_IMAGE"
+  - echo "$CI_REGISTRY_PASSWORD"
+  - echo "$CI_REGISTRY_USER"
+  - echo "$CI_COMMIT_BEFORE_SHA"
+  - echo "$CONTAINER_LATEST_IMAGE1"
+  - echo "$CONTAINER_JOBID_IMAGE1"
+
+  
+
+maven-build:
+  image: maven:3-jdk-8
+  stage: build
+  script: "mvn $MAVEN_CLI_OPTS clean package  -P hms-dev,hms-docker -Dmaven.test.skip=true"
+  artifacts:
+    paths:
+      - target/auth-server-0.0.1.jar
+
+docker-build:
+  stage: package
+  script:
+    - echo "Start CI/CD"
+    - docker build -t $CONTAINER_LATEST_IMAGE -t $CONTAINER_JOBID_IMAGE .
+    # - docker login -u ma.mardani -p 'amin1370' $REGISTRY_ADDRESS
+    - docker login -u admin -p 'admin' 192.168.25.80:8080
+    - docker push $CONTAINER_LATEST_IMAGE
+    - docker push $CONTAINER_JOBID_IMAGE
+
+    
+
+
+  
+deploy:
+  stage: deploy
+  image: dtzar/helm-kubectl
+  script:
+    - kubectl config set clusters.kubernetes.server https://192.168.25.80:6443 --insecure-skip-tls-verify=true 
+    - kubectl config set clusters.kubernetes.certificate-authority-data ${CERTIFICATE_AUTHORITY_DATA}
+    # - kubectl config set clusters.mycluster.certificate-authority-data ${CERTIFICATE_AUTHORITY}
+    - kubectl config set-credentials gitlab-admin --token="${USER_TOKEN}"
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=gitlab-admin
+    - kubectl config use-context kubernetes
+    - kubectl apply -f deploy.yml
+    
+    
+    

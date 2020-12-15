@@ -1,0 +1,9 @@
+FROM 192.168.25.203:8080/library/serverjre:8
+COPY /app/target/vbn-app-1.0.0.jar /usr/local/lib/app.jar
+                        
+ENV dms.configuration.uri='http://192.168.25.80:30760/'
+ENV dms.configuration.profile='dev'
+ENV dms.configserver.username=username
+ENV dms.configserver.password=password
+
+ENTRYPOINT ["bin/sh","-c","java -Xmx256m -Duser.timezone=Asia/Tehran -Djava.security.egd=file:/dev/./urandom -jar /usr/local/lib/app.jar"]

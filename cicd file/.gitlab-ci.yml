@@ -1,0 +1,81 @@
+image: 192.168.25.203:8080/library/docker:19.03.12
+services:
+  - 192.168.25.203:8080/library/docker:dind
+
+variables:
+  MAVEN_CLI_OPTS: "-s settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  DOCKER_TLS_CERTDIR: ""
+  GIT_SSL_NO_VERIFY: "true"
+  CONTAINER_JOBID_IMAGE1:  $CI_REGISTRY_IMAGE:$CI_JOB_ID
+  CONTAINER_JOBID_IMAGE:  gitlab.demisco.com:5050/mad/vbn-backend:$CI_PIPELINE_ID
+
+  REGISTRY_ADDRESS: $CI_REGISTRY
+  app_name: "vbn-backend-mad"
+  nodePort: "30320"
+  clusterPort: "8080"
+  containerPort: "8080"
+  name_space: "mad"
+  replica: "1"
+  replica_history: "2"
+  registry_secret: "gitlab-pull-secret"
+  
+
+stages:
+  - build
+  - package
+  - deploy
+
+
+cache:
+  paths:
+    - .m2/repository/
+    - target/
+    
+
+maven-build:
+  image: 192.168.25.203:8080/library/maven:3-jdk-8
+  stage: build
+  script: 
+    - rm -rf .m2/repository/ir
+    - mvn $MAVEN_CLI_OPTS clean package -Dmaven.test.skip=true
+  artifacts:
+    paths:
+      - app/target/vbn-app-1.0.0.jar
+    expire_in: 3 days
+  when: manual
+
+
+
+docker-build:
+  stage: package
+  script:
+    - echo "Start CI/CD"
+    - docker build -t $CONTAINER_JOBID_IMAGE .
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker push $CONTAINER_JOBID_IMAGE
+  when: manual
+
+
+
+
+deploy:
+  stage: deploy
+  image: 192.168.25.203:8080/library/helm-kubectl:latest
+#   image: bitnami/kubectl:latest
+  script:
+    - kubectl config set clusters.kubernetes.server https://192.168.25.80:6443 --insecure-skip-tls-verify=true 
+    - kubectl config set clusters.k8s.certificate-authority-data ${CERTIFICATE_AUTHORITY_DATA}
+    - kubectl config set-credentials gitlab-admin --token="${USER_TOKEN}"
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=gitlab-admin
+    - kubectl config use-context kubernetes
+    - sed -i "s#\$image_name#${CONTAINER_JOBID_IMAGE}#" deploy.yml
+    - sed -i "s#\$registry_secret#${registry_secret}#" deploy.yml
+    - sed -i "s#\$app_name#${app_name}#" deploy.yml
+    - sed -i "s#\$name_space#${name_space}#" deploy.yml
+    - sed -i "s#\$replica#${replica}#" deploy.yml
+    - sed -i "s#\$clusterPort#${clusterPort}#" deploy.yml
+    - sed -i "s#\$containerPort#${containerPort}#" deploy.yml
+    - sed -i "s#\$nodePort#${nodePort}#" deploy.yml
+    - kubectl apply -f deploy.yml --insecure-skip-tls-verify=true --validate=false
+  when: manual

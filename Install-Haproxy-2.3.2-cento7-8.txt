@@ -1,0 +1,27 @@
+
+yum install gcc pcre-devel  openssl-devel readline-devel make -y
+
+wget https://www.haproxy.org/download/2.3/src/haproxy-2.3.2.tar.gz -O ~/haproxy.tar.gz
+wget http://www.lua.org/ftp/lua-5.3.5.tar.gz
+
+tar xzvf ~/haproxy.tar.gz -C ~/
+tar xf lua-5.3.5.tar.gz
+
+cd lua-5.3.5/
+make linux
+make INSTALL_TOP=/opt/lua53 install
+
+cd haproxy-2.3.2/
+make TARGET=linux-glibc USE_PCRE=1 USE_OPENSSL=1 USE_ZLIB=1 USE_LINUX_TPROXY=1 USE_REGPARM=1  CPU=native USE_LIBCRYPT=1 USE_LINUX_SPLICE=1 USE_DL=1 USE_LUA=yes LUA_LIB=/opt/lua53/lib LUA_INC=/opt/lua53/include/ LDFLAGS=-ldl LUA_LIB_NAME=lua
+make install
+
+mkdir -p /etc/haproxy
+mkdir -p /var/lib/haproxy 
+touch /var/lib/haproxy/stats
+ln -s /usr/local/sbin/haproxy /usr/sbin/haproxy
+cp ~/haproxy-2.3.2/examples/haproxy.init /etc/init.d/haproxy
+chmod 755 /etc/init.d/haproxy
+systemctl daemon-reload
+useradd -r haproxy
+systemctl start haproxy.service
+

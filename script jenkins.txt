@@ -1,0 +1,183 @@
+pipeline {
+ agent any
+	 tools {
+			maven 'M3' 
+		}
+  environment {
+
+		// Mirror warehouse address
+		def registry = "192.168.25.80:8080"
+		// Mirror warehouse project
+		def project = "job"
+		// Image name
+		def app_name = "job"
+		// Mirror full name
+		def image_name = "${registry}/${project}/${app_name}:${BUILD_NUMBER}"
+		// git address
+		def git_address = "http://git.istd.com/ma.mardani/job.git"
+
+		// Certification
+		def harbor_auth = "810c6d50-75cd-4e6c-ae21-c82516ae79d6"
+		def gitlab_auth = "77ea42b4-8d48-4c48-941e-82d80dc154b6"
+
+		// K8s Certification
+		def k8s_auth = "e5a0ecf9-69e4-40f0-ba20-ec4cd3cd4356"
+		// harbor secret_name
+		def harbor_registry_secret = "harbor-pull-secret"
+		// k8s nodePort
+		def nodePort = "30666"
+		}
+
+  stages{
+        stage('Pull code') { 
+         steps {
+            checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[credentialsId: "${gitlab_auth}", url: "${git_address}"]]])
+            sh "ls"
+			echo "Pull code"
+         }
+        }
+        stage('Code compilation') {
+             steps {
+            sh "mvn clean package -Dmaven.test.skip=true"
+            sh "ls"
+			echo "Code compilation"
+             }
+        }
+        stage('Build mirror') {
+             steps {
+            withCredentials([usernamePassword(credentialsId: "${harbor_auth}", passwordVariable: 'password', usernameVariable: 'username')]) {
+                sh """
+                    echo '
+                        #
+                        # Build stage
+                        #
+                        FROM maven:3.6.0-jdk-11-slim AS build
+                        COPY src /home/app/src
+                        COPY pom.xml /home/app
+                        RUN mvn -f /home/app/pom.xml clean package
+                        #
+                        # Package stage
+                        #
+                        FROM java:8
+                        COPY --from=build /home/app/target/SpringBootHelloWorld-0.0.1-SNAPSHOT.jar /usr/local/lib/SpringBootHelloWorld.jar
+                        EXPOSE 8080
+                        ENTRYPOINT ["java","-jar","/usr/local/lib/SpringBootHelloWorld.jar"] 
+                    ' > Dockerfile
+
+                    docker build -t ${image_name} .
+                    docker login -u ${username} -p '${password}' ${registry}
+                    docker push ${image_name}
+                """
+            echo "Code compilation"
+            }
+            }
+        }
+        stage('Deploy to K8s'){
+             steps {
+            sh """
+                sed -i 's#\$IMAGE_NAME#${image_name}#' deploy.yml
+                sed -i 's#\$SECRET_NAME#${harbor_registry_secret}#' deploy.yml
+                sed -i 's#\$NODE_PORT#${nodePort}#' deploy.yml
+            """
+            kubernetesDeploy configs: 'deploy.yml', kubeconfigId: "${k8s_auth}"
+             
+                 echo "Code compilation"
+             }
+        }
+    }
+    }
+	
+	
+	
+	-----------------------------
+	
+	pipeline {
+ agent any
+	 tools {
+			maven 'M3' 
+		}
+  environment {
+
+		// Mirror warehouse address
+		def registry = "192.168.25.80:8080"
+		// Mirror warehouse project
+		def project = "ehr-backend"
+		// Image name
+		def app_name = "ehr-backend"
+		// Mirror full name
+		def image_name = "${registry}/${project}/${app_name}:${BUILD_NUMBER}"
+		// git address
+// 		def git_address = "http://git.istd.com/ma.mardani/job.git"
+        def git_address = "http://git.istd.com/ehr/ehr-backend.git"
+		// Certification
+		def harbor_auth = "810c6d50-75cd-4e6c-ae21-c82516ae79d6"
+		def gitlab_auth = "77ea42b4-8d48-4c48-941e-82d80dc154b6"
+
+		// K8s Certification
+		def k8s_auth = "e5a0ecf9-69e4-40f0-ba20-ec4cd3cd4356"
+		// harbor secret_name
+		def harbor_registry_secret = "harbor-pull-secret"
+		// k8s nodePort
+		def nodePort = "30666"
+		}
+
+  stages{
+        stage('Pull code') { 
+         steps {
+            // checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[credentialsId: "${gitlab_auth}", url: "${git_address}"]]])
+            checkout([$class: 'GitSCM', branches: [[name: "*/dev-ehr-backend"]], userRemoteConfigs: [[credentialsId: "${gitlab_auth}", url: "${git_address}"]]])
+            sh "ls"
+			echo "Pull code"
+         }
+        }
+        stage('Code compilation') {
+             steps {
+            sh "mvn clean package --settings /var/jenkins_home/setting.xml -pdevelop -Dmaven.test.skip=true"
+            sh "ls"
+			echo "Code compilation"
+             }
+        }
+        stage('Build mirror') {
+             steps {
+            withCredentials([usernamePassword(credentialsId: "${harbor_auth}", passwordVariable: 'password', usernameVariable: 'username')]) {
+                sh """
+                    echo '
+                        #
+                        # Build stage
+                        #
+                        #FROM maven:3.6.0-jdk-11-slim AS build
+                        #COPY src /home/app/src
+                        #COPY pom.xml /home/app
+                        #RUN mvn -f /home/app/pom.xml clean package
+                        #
+                        # Package stage
+                        #
+                        FROM java:8
+                        COPY /target/ehr-0.0.1.jar /usr/local/lib/ehr-0.0.1.jar
+                        #ENTRYPOINT ["java","-jar","/usr/local/lib/ehr-0.0.1.jar"]
+                        ENTRYPOINT ["bin/sh","-c","java -Xmx256m -Djava.security.egd=file:/dev/./urandom -jar /usr/local/lib/ehr-0.0.1.jar"]
+                    ' > Dockerfile
+
+                    docker build -t ${image_name} .
+                    docker login -u ${username} -p '${password}' ${registry}
+                    docker push ${image_name}
+                """
+            echo "Code compilation"
+            }
+            }
+        }
+        stage('Deploy to K8s'){
+             steps {
+            sh """
+                sed -i 's#\$IMAGE_NAME#${image_name}#' deploy.yml
+                sed -i 's#\$SECRET_NAME#${harbor_registry_secret}#' deploy.yml
+                sed -i 's#\$NODE_PORT#${nodePort}#' deploy.yml
+            """
+            kubernetesDeploy configs: 'deploy.yml', kubeconfigId: "${k8s_auth}"
+             
+                 echo "Code compilation"
+             }
+        }
+    }
+    }
+

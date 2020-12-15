@@ -1,0 +1,140 @@
+pipeline {
+ agent any
+//  agent { docker { image 'node:latest' } }
+//  agent {
+//     docker 'circleci/node:9.3-stretch-browsers'
+//   }
+	 tools {
+			nodejs "nodejs1"
+		}
+
+		environment {
+
+		// Mirror warehouse address
+		def registry = "192.168.25.203:8080"
+		// Mirror warehouse project
+		def project = "ops"
+		// Image name
+		def app_name = "karafarin-sales-ui"
+		// Mirror full name
+		def image_name = "${registry}/${project}/${app_name}:${BUILD_NUMBER}"
+		// git address
+		def git_address = "https://gitlab.demisco.com/ma.mardani/karafarin-sales-system.git"
+		// Certification
+		def harbor_auth = "810c6d50-75cd-4e6c-ae21-c82516ae79d6"
+		def gitlab_auth = "77ea42b4-8d48-4c48-941e-82d80dc154b6"
+
+		// K8s Certification
+		def k8s_auth = "e5a0ecf9-69e4-40f0-ba20-ec4cd3cd4356"
+		// harbor secret_name
+		def harbor_registry_secret = "harbor-pull-secret"
+		// k8s nodePort
+		def nodePort = "30925"
+		def clusterPort = "80"
+		def containerPort = "80"
+		def name_space = "ops"
+		}
+
+  stages{
+        stage('Pull code') { 
+         steps {
+            // checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[credentialsId: "${gitlab_auth}", url: "${git_address}"]]])
+            sh "git config --global http.sslVerify false"
+            checkout([$class: 'GitSCM', branches: [[name: "*/master"]], userRemoteConfigs: [[credentialsId: "${gitlab_auth}", url: "${git_address}"]]])
+            sh "ls"
+
+			echo "Pull code"
+         }
+        }
+        
+        stage('Build mirror') {
+             steps {
+            withCredentials([usernamePassword(credentialsId: "${harbor_auth}", passwordVariable: 'password', usernameVariable: 'username')]) {
+                sh """
+                    echo '
+                        #
+                        # Build stage
+                        #
+                        FROM 192.168.25.203:8080/library/nginx:latest
+                        COPY / /var/www
+                        COPY /nginx.conf /etc/nginx/nginx.conf
+                        EXPOSE 80
+                        ENTRYPOINT ["nginx","-g","daemon off;"] 
+                    ' > Dockerfile
+
+                    docker build -t ${image_name} .
+                    docker login -u ${username} -p '${password}' ${registry}
+                    docker push ${image_name}
+                """
+            echo "Code compilation"
+            }
+            }
+        }
+        stage('create deployment') {
+             steps {
+            sh """
+                    echo 'apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: $app_name
+  namespace: $name_space
+spec:
+  selector:
+    matchLabels:
+      app: $app_name
+  template:
+    metadata:
+      labels:
+        app: $app_name
+        logging: "true"
+    spec:
+      volumes:
+      - name: tz-config
+        hostPath:
+         path: /usr/share/zoneinfo/Asia/Tehran
+      imagePullSecrets:
+      - name: $harbor_registry_secret
+      containers:
+      - name: $app_name
+        image: $image_name
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "1024Mi"
+            cpu: "2000m"
+        ports:
+        - containerPort: $containerPort
+        volumeMounts:
+        - name: tz-config
+          mountPath: /etc/localtime
+---                                
+kind: Service
+apiVersion: v1
+metadata:     
+  name: $app_name
+  namespace: $name_space
+spec:                       
+  type: NodePort            
+  selector:                 
+    app: $app_name
+  ports:                         
+    - protocol: TCP              
+      port: $clusterPort                   
+      targetPort: $containerPort
+      nodePort: $nodePort' > deploy.yml
+                """
+			echo "create deployment compilation"
+             }
+        }
+        stage('Deploy to K8s'){
+             steps {
+            kubernetesDeploy configs: 'deploy.yml', kubeconfigId: "${k8s_auth}"
+             
+                 echo "Code compilation"
+             }
+        }
+
+    }
+    }
