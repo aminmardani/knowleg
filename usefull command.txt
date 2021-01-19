@@ -1,0 +1,12 @@
+----delete unused replicaset
+kubectl -n ops  delete $(kubectl get all -n ops| grep replicaset.apps | grep "0         0         0" | cut -d' ' -f 1)
+
+
+----- delete faild pod
+kubectl  delete pods --field-selector=status.phase=Failed --all-namespaces
+
+
+-----migrate image to other server
+docker save 192.168.25.203:8080/salamat/brms-web-salamat:8 | bzip2 | \ssh root@172.24.70.201 'bunzip2 | docker load'
+
+

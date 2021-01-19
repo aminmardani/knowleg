@@ -1,0 +1,22 @@
+-------------------------------------------------------------------------------admin
+kubectl create serviceaccount dashboard-admin
+
+kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=default:dashboard-admin
+
+kubectl get secrets
+
+kubectl describe secret dashboard-admin-to
+
+
+
+
+-------------------------------------------------------------------------------view
+
+
+kubectl create serviceaccount dashboard-view
+
+kubectl create clusterrolebinding dashboard-view --clusterrole=view  --serviceaccount=default:dashboard-view
+
+kubectl get secrets
+
+kubectl describe secrets dashboard-view-t
