@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: monitoring
+  name: elasticsearch-master-config
+  labels:
+    app: elasticsearch
+    role: master
+data:
+  elasticsearch.yml: |-
+    cluster.name: ${CLUSTER_NAME}
+    node.name: ${NODE_NAME}
+    discovery.seed_hosts: ${NODE_LIST}
+    cluster.initial_master_nodes: ${MASTER_NODES}
+
+    network.host: 0.0.0.0
+
+    node:
+      master: true
+      data: false
+      ingest: false
+
+    xpack.security.enabled: true
+    xpack.monitoring.collection.enabled: true
+    xpack.monitoring.exporters.my_local:
+      type: local
+      use_ingest: false
