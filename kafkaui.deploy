@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: datahub
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+        logging: "true"
+    spec:
+      hostAliases:
+      - ip: "172.16.1.11"
+        hostnames:
+        - "kafka2.demisco.com"
+      volumes:
+      - name: tz-config
+        hostPath:
+         path: /usr/share/zoneinfo/Asia/Tehran
+      imagePullSecrets:
+      - name: harbor-pull-secret
+      containers:
+      - name: kafka-ui
+        image: 172.16.17.166/library/kafka-ui:latest
+        env:
+        - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+          value: "172.16.1.11:2080"
+        - name: KAFKA_CLUSTERS_0_NAME
+          value: "datahub0"
+        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+          value: "172.16.1.11:9093"
+        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+          value: "172.16.1.11:9193"
+        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+          value: "172.16.1.11:9293"  
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "2048Mi"
+            cpu: "2000m"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: tz-config
+          mountPath: /etc/localtime
+          
+          
+          
+kind: Service
+apiVersion: v1
+metadata:     
+  name: kafka-ui
+  namespace: datahub
+spec:                       
+  type: ClusterIP            
+  selector:                 
+    app: kafka-ui
+  ports:                         
+    - protocol: TCP              
+      port: 8080                   
+      targetPort: 8080
+      #nodePort: 31600'          

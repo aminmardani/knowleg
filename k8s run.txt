@@ -81,6 +81,18 @@ mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
 
+
+  
+wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
+ 
+  
+sed 's/vxlan/host-gw/' -i kube-flannel.yml 
+ 
+ 
+kubectl create -f kube-flannel.yml 
+ 
+
+
 ------------start Calico
 
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
@@ -89,9 +101,6 @@ https://docs.projectcalico.org/v3.14/manifests/calico.yaml
 
 
 watch kubectl get all --all-namespaces -o wide
-
-
-kubeadm join 192.168.25.80:6443 --token 4587yj.i3y6ytgv4g8xzrgr  --discovery-token-ca-cert-hash sha256:1a411d04749a38b42cd59b5b408e0d3c2897ee58082d6f107e04930bf979e31a
 
 
 
@@ -103,35 +112,13 @@ modprobe -r ipip
 rm /etc/cni/net.d/10-calico.conflist && rm /etc/cni/net.d/calico-kubeconfig
 iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
 
-
+****************************************************************************
+kubectl -n kube-system rollout restart deployment coredns
 
 kubectl delete pod foo --grace-period=0 --force
-
-
-kubeadm join 192.168.25.80:6443 --token 70xf6u.asb7wrgdrraycyun --discovery-token-ca-cert-hash sha256:0265131a457396b82325cd1bb6c969fe1f4f33412831080bc2619760b5000a28
 
 
 
 kubectl taint nodes --all node-role.kubernetes.io/master-
 
 
-
-
-kubeadm join 192.168.25.80:6443 --token 3hlyge.lxptzrxvxltqbe24     --discovery-token-ca-cert-hash sha256:5fc5b20d0605f75552699ff514c63bc4067d44d81e676edb0ee5fcea9a90b510
-
-
-
-
-
-kubeadm join 192.168.25.206:6443 --token hwzl2d.xfvstf1759bc2jzs    --discovery-token-ca-cert-hash sha256:fa607cdc187b1d40ff6a5a7d3a5dacd55c3f931a55c9702fd8417d3e7eae0923
-
-
-
-
-
-
-
-
-
-
-kubeadm join 192.168.25.80:6443 --token 33rh9i.7om4zejjo5p2ax4e   --discovery-token-ca-cert-hash sha256:4f1ace981bf69be840a7e5c6da6c2c5de946688387764905892b03685486a151

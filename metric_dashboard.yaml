@@ -134,7 +134,7 @@ spec:
         - --kubelet-preferred-address-types=InternalIP
         - --kubelet-use-node-status-port
         - --kubelet-insecure-tls
-        image: 192.168.25.203:8080/library/metrics-server/metrics-server:v0.4.1
+        image: 192.168.105.171/library/kubernetesui/metrics-scraper:v1.0.4
         command:
         - /metrics-server
         - --kubelet-insecure-tls

@@ -1,0 +1,39 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-view
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/pod-view
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+    apiGroups:
+      - ''
+    resources:
+      - '*'
+  - verbs:
+      - get
+      - list
+      - watch
+    apiGroups:
+      - extensions
+    resources:
+      - '*'
+  - verbs:
+      - get
+      - list
+      - watch
+    apiGroups:
+      - apps
+    resources:
+      - '*'
+  - verbs:
+      - get
+      - list
+      - watch
+      - delete
+    apiGroups:
+      - ''
+    resources:
+      - pods

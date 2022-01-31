@@ -10,3 +10,12 @@ kubectl  delete pods --field-selector=status.phase=Failed --all-namespaces
 docker save 192.168.25.203:8080/salamat/brms-web-salamat:8 | bzip2 | \ssh root@172.24.70.201 'bunzip2 | docker load'
 
 
+lsof -i -P -n | grep LISTEN
+
+kubectl create serviceaccount dashboard-view-pod
+kubectl create clusterrolebinding dashboard-view-pod --clusterrole=pod-view  --serviceaccount=default:dashboard-view-pod
+kubectl describe secrets dashboard-
+
+
+kubectl create serviceaccount dashboard-admin-sa
+kubectl create clusterrolebinding dashboard-admin-sa --clusterrole=cluster-admin --serviceaccount=default:dashboard-admin-sa
