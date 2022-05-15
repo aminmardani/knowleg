@@ -1,0 +1,9 @@
+select * from TM_USERS u where u.USER_CODE='990915';
+select * from TM_USERS u where u.JIRA_CODE='f.karimi';
+select * from TM_USERS u where u.JIRA_KEY='JIRAUSER14702';
+
+SELECT * from TM_RSRC_WEEKLY_WORK_TIME t where t.RSRC_ID='7583';
+select * from TM_RSRC_DAILY_TIME t where t.RWT_ID='2139043';
+select * from TM_RSRC_LEAVE t where t.RSRC_ID='7583';
+
+select * from TM_RESOURCE_TIMESHEETS t where t.RSRC_ID='7495' and t.TMSH_ID='568';

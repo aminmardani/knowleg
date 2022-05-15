@@ -19,3 +19,7 @@ kubectl describe secrets dashboard-
 
 kubectl create serviceaccount dashboard-admin-sa
 kubectl create clusterrolebinding dashboard-admin-sa --clusterrole=cluster-admin --serviceaccount=default:dashboard-admin-sa
+
+
+
+registry garbage-collect  /etc/registry/config.yml
