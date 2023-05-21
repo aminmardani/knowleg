@@ -2,7 +2,6 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pod-view
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/pod-view
 rules:
   - verbs:
       - get

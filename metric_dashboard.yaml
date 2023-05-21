@@ -36,11 +36,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - nodes/metrics
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
   - pods
   - nodes
-  - nodes/stats
-  - namespaces
-  - configmaps
   verbs:
   - get
   - list
@@ -131,14 +134,11 @@ spec:
       - args:
         - --cert-dir=/tmp
         - --secure-port=4443
-        - --kubelet-preferred-address-types=InternalIP
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
         - --kubelet-use-node-status-port
+        - --metric-resolution=15s
         - --kubelet-insecure-tls
-        image: 192.168.105.171/library/kubernetesui/metrics-scraper:v1.0.4
-        command:
-        - /metrics-server
-        - --kubelet-insecure-tls
-        - --kubelet-preferred-address-types=InternalIP
+        image: registry.k8s.io/metrics-server/metrics-server:v0.6.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -158,8 +158,14 @@ spec:
             path: /readyz
             port: https
             scheme: HTTPS
+          initialDelaySeconds: 20
           periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
         securityContext:
+          allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000

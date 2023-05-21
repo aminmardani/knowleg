@@ -6,9 +6,6 @@ kubectl -n ops  delete $(kubectl get all -n ops| grep replicaset.apps | grep "0 
 kubectl  delete pods --field-selector=status.phase=Failed --all-namespaces
 
 
------migrate image to other server
-docker save 192.168.25.203:8080/salamat/brms-web-salamat:8 | bzip2 | \ssh root@172.24.70.201 'bunzip2 | docker load'
-
 
 lsof -i -P -n | grep LISTEN
 
@@ -19,7 +16,96 @@ kubectl describe secrets dashboard-
 
 kubectl create serviceaccount dashboard-admin-sa
 kubectl create clusterrolebinding dashboard-admin-sa --clusterrole=cluster-admin --serviceaccount=default:dashboard-admin-sa
+-----------------------------------------------------------
+delete temp harbor
 
-
+docker exec -it 4607730bc03c /bin/bash
+------------------------------------------------------------
 
 registry garbage-collect  /etc/registry/config.yml
+registry_DO_NOT_USE_GC garbage-collect /etc/registry/config.yml
+
+
+---------------------------------------------
+after renew cert
+
+$ cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+$ chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+------------------------------------------------------------
+
+sudo kubectl create secret docker-registry gitlab-pull-secret --docker-server='https://gitlab.demisco.com:5050' --docker-username='k8suser' --docker-password='dK@r3#tiZe2k20' -n cita
+
+------------------------------------------------------------
+
+--kubeconfig /etc/kubernetes/admin.conf
+
+------------------------------------------------------------
+kubectl -n kube-system rollout restart deployment coredns
+
+kubectl delete pod foo --grace-period=0 --force
+
+------------------------------------------------------------
+
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+kubectl taint nodes mei-ava-kub07  node-role.kubernetes.io/master-
+
+------------------------------------------------------------
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+        </plugin>
+    </plugins>
+
+</build> 
+ 
+ ------------------------------------------------------------
+ 
+ CONTAINER_JOBID_IMAGE:  $CI_REGISTRY_IMAGE:$CI_PIPELINE_ID
+ 
+  - sed -i "s#\$config_uri#${config_uri_dev}#" Dockerfile
+  - sed -i "s#\$profile#${profile_dev}#" Dockerfile
+  - docker build -t $CONTAINER_JOBID_IMAGE -f Dockerfile .
+
+
+  config_uri_dev: "http://config-server-ota.ota.svc.cluster.local:8080"
+  config_uri_test: "http://config-server-ota.ota.svc.cluster.local:8080"
+  profile_dev: "test"
+  profile_test: "dev"
+
+
+FROM 192.168.25.203:8080/library/serverjre:8
+ENV spring.cloud.config.uri=$config_uri
+ENV spring.cloud.config.profile=$profile
+ENV spring.cloud.config.username='user'
+ENV spring.cloud.config.password='pass'
+COPY /app/target/*.jar /usr/local/lib/app.jar
+ENTRYPOINT ["bin/sh","-c","java -Xms512m -Xmx512m -Duser.timezone=Asia/Tehran -Djava.security.egd=file:/dev/./urandom -jar /usr/local/lib/app.jar"]
+
+------------------------------------------------------------
+
+sudo ifconfig -a
+sudo ip link set mtu 1300 ens160
+sudo ip link set mtu 1300 docker0
+
+
+------------------------migrate last change image to another server-----------------------------
+sudo docker ps
+sudo docker commit 434ccd9f15a4 apache-image
+sudo docker save image_name > image_name.tar
+scp apache-image.tar username@192.168.1.29
+sudo docker load < image-name.tar
+docker run -d --name container_name -p 80:80 image-name
+
+-----migrate image to other server-----
+
+docker save 192.168.25.203:8080/salamat/brms-web-salamat:8 | bzip2 | \ssh root@172.24.70.201 'bunzip2 | docker load'
+
+
+
+------------------------------------------------------------

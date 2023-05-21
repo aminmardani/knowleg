@@ -112,13 +112,4 @@ modprobe -r ipip
 rm /etc/cni/net.d/10-calico.conflist && rm /etc/cni/net.d/calico-kubeconfig
 iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
 
-****************************************************************************
-kubectl -n kube-system rollout restart deployment coredns
-
-kubectl delete pod foo --grace-period=0 --force
-
-
-
-kubectl taint nodes --all node-role.kubernetes.io/master-
-
 

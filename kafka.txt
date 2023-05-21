@@ -1,0 +1,44 @@
+kafka root pass m2jU_Gu#5@U76yt
+kafka kafka pass Gu#5@U76yt
+
+
+---------create jks 
+
+cd /kafka-cluster/security-tools/
+./client-ssl-generate.sh user pass
+./client-ssl-generate.sh kafka kafka@123Pass
+
+
+-------------------------------import jks in ca 
+keytool -import -noprompt -keystore /etc/kafka/kafka.server.truststore.jks -alias sso-ca  -file /kafka-cluster/security-tools/rasa-sso/rasa-sso-ca.crt -storepass kafka@123
+keytool -import -noprompt -keystore /etc/kafka/kafka.server.truststore.jks -alias commiunication-ca  -file /kafka-cluster/security-tools/communication/communication-ca.crt -storepass kafka@123
+
+---new create jks with import in ca
+cd /kafka-cluster/security-tools/
+./client-ssl-generate.sh 
+
+-------------------------------
+./cli/broker-start.sh 0 1 2
+ps -aux | grep .broker
+
+-------------------------------
+./cli/broker-stop.sh 0 1 2
+ps -aux | grep .broker
+
+-------------------------------
+bin/cmak
+./sbt clean dist
+nohup bin/cmak >/dev/null 2>&1 &
+ps -aux | grep cmak
+
+
+-------------------------------
+./cli/zk-start.sh
+ps -aux | grep zookeeper.pro
+
+
+
+
+-------------------------------
+./cli/kafka-admin-start.sh
+ps -aux | grep kafka-admin
